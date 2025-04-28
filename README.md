@@ -69,7 +69,7 @@ P2P-UrFU — веб-платформа (в стадии разработки) д
 ## Технологии
 
 - **Backend**: Python, Django, Django REST Framework
-- **База данных**: SQLite (для разработки), PostgreSQL (для продакшн)
+- **База данных**: SQLite
 - **Realtime**: Django Channels для чатов
 - **Frontend**: React/Vue.js (в разработке)
 - **Деплой**: Docker, GitHub Actions
