@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Главная - УРФУ P2P Платформа{% endblock %}
+
+{% block content %}
+<div class="jumbotron">
+    <h1 class="display-4">Добро пожаловать на УРФУ P2P Платформу!</h1>
+    <p class="lead">Здесь вы можете получить помощь по программированию от других студентов или помочь им сами.</p>
+    <hr class="my-4">
+    <p>Задавайте вопросы, публикуйте курсы и общайтесь с другими студентами.</p>
+    <a class="btn btn-primary btn-lg" href="{% url 'core:post_list' %}" role="button">Просмотреть посты</a>
+    <a class="btn btn-success btn-lg" href="{% url 'core:course_list' %}" role="button">Просмотреть курсы</a>
+</div>
+{% endblock %}
