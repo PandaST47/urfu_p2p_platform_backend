@@ -1,3 +1,5 @@
+# urfu_p2p urls.py
+
 from django.contrib import admin
 from django.urls import path, include
 from django.shortcuts import redirect
@@ -6,4 +8,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', lambda request: redirect('core:index'), name='root'),
     path('core/', include('core.urls')),
+    path('api/', include('core.api_urls')),  # API views
 ]
