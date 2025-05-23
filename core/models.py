@@ -1,7 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-
+#models.py
 class User(AbstractUser):
     profile_img_url = models.TextField(default='')
     role = models.TextField(default='user')

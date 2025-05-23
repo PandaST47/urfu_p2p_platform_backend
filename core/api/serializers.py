@@ -1,12 +1,13 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import (
+from core.models import (
     User, Post, Comment, Course, Chat, 
     Message, Code, CodeComment, Bookmark, 
     Report, Review, UserWarning, Admin
 )
 
-#api/serializers.py
+VALID_LANGUAGES = ['python', 'javascript', 'java', 'cpp', 'ruby']
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -17,6 +18,10 @@ class UserSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'is_blocked']
 
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already exists")
+        return value
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -29,7 +34,12 @@ class PostSerializer(serializers.ModelSerializer):
             'created_at', 'is_resolved'
         ]
         read_only_fields = ['id', 'user', 'created_at']
-    
+
+    def validate_title(self, value):
+        if len(value) < 5:
+            raise serializers.ValidationError("Title must be at least 5 characters long")
+        return value
+
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
@@ -41,7 +51,7 @@ class CommentSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'user', 'created_at']
-    
+
 class CourseSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
@@ -53,7 +63,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'user', 'created_at']
-    
+
 class ChatSerializer(serializers.ModelSerializer):
     user1 = UserSerializer(read_only=True)
     user2 = UserSerializer(read_only=True)
@@ -87,6 +97,11 @@ class CodeSerializer(serializers.ModelSerializer):
             'start_line', 'end_line', 'created_at'
         ]
         read_only_fields = ['id', 'user', 'created_at']
+
+    def validate_language(self, value):
+        if value.lower() not in VALID_LANGUAGES:
+            raise serializers.ValidationError("Unsupported programming language")
+        return value.lower()
 
 class CodeCommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)

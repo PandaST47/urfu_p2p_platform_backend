@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from .models import User, Post, Comment, Course, Chat, Message, Code, CodeComment, Like, Bookmark, Report
-#migrations/views.py
+#core/views.py
 # Базовые представления для начала работы
 def index(request):
     """Главная страница"""

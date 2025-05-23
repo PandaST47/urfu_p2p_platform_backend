@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile</title>
+</head>
+<body>
+    <h1>{{ profile_user.username }}'s Profile</h1>
+    <p>Email: {{ profile_user.email }}</p>
+    <p>Role: {{ profile_user.role }}</p>
+    {% if profile_user == user %}
+        <p><a href="{% url 'core:edit_profile' %}">Edit Profile</a></p>
+    {% endif %}
+    <h2>Posts</h2>
+    <ul>
+    {% for post in posts %}
+        <li><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a></li>
+    {% empty %}
+        <li>No posts</li>
+    {% endfor %}
+    </ul>
+    <p><a href="{% url 'core:index' %}">Home</a></p>
+</body>
+</html>

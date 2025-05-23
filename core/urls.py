@@ -1,50 +1,23 @@
-# core/api_urls.py
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import (
-    PostViewSet, CourseViewSet, 
-    ChatViewSet, MessageViewSet, 
-    ReportViewSet
-)
 from . import views
 
-router = DefaultRouter()
-router.register(r'posts', PostViewSet, basename='post')
-router.register(r'courses', CourseViewSet, basename='course')
-router.register(r'chats', ChatViewSet, basename='chat')
-router.register(r'messages', MessageViewSet, basename='message')
-router.register(r'reports', ReportViewSet, basename='report')
+app_name = 'core'
 
 urlpatterns = [
-    path('', include(router.urls)),
-
-    # Аутентификация
+    # HTML routes
+    path('', views.index, name='index'),
     path('register/', views.register, name='register'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-
-    # Профиль
     path('profile/<int:user_id>/', views.profile_view, name='profile'),
     path('profile/edit/', views.edit_profile, name='edit_profile'),
-
-    # Посты
+    path('posts/', views.post_list, name='post_list'),
+    path('posts/create/', views.create_post, name='create_post'),
+    path('posts/<int:post_id>/', views.post_detail, name='post_detail'),
+    path('posts/<int:post_id>/edit/', views.edit_post, name='edit_post'),
+    path('posts/<int:post_id>/delete/', views.delete_post, name='delete_post'),
     path('posts/<int:post_id>/mark-resolved/', views.mark_post_resolved, name='mark_post_resolved'),
-
-    # Закладки
-    path('bookmarks/', views.bookmark_list, name='bookmark_list'),
-    path('bookmarks/add/<int:post_id>/', views.add_bookmark, name='add_bookmark'),
-    path('bookmarks/remove/<int:post_id>/', views.remove_bookmark, name='remove_bookmark'),
-
-    # Лайки
-    path('like/<str:target_type>/<int:target_id>/', views.add_like, name='add_like'),
-
-    # Отзывы
-    path('reviews/add/<int:user_id>/', views.add_review, name='add_review'),
-
-    # Административные функции
-    path('admin/reports/', views.admin_report_list, name='admin_report_list'),
-    path('admin/reports/<int:report_id>/process/', views.process_report, name='process_report'),
-    path('admin/warnings/create/<int:user_id>/', views.create_warning, name='create_warning'),
-    path('admin/users/<int:user_id>/block/', views.block_user, name='block_user'),
-    path('admin/users/<int:user_id>/ban/', views.ban_user, name='ban_user'),
+    path('posts/<int:post_id>/comment/', views.add_comment, name='add_comment'),
+    # API routes
+    path('api/', include('core.api.urls')),
 ]

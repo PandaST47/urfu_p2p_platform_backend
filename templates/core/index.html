@@ -1,14 +1,24 @@
-{% extends 'core/base.html' %}
-
-{% block title %}Главная - УРФУ P2P Платформа{% endblock %}
-
-{% block content %}
-<div class="jumbotron">
-    <h1 class="display-4">Добро пожаловать на УРФУ P2P Платформу!</h1>
-    <p class="lead">Здесь вы можете получить помощь по программированию от других студентов или помочь им сами.</p>
-    <hr class="my-4">
-    <p>Задавайте вопросы, публикуйте курсы и общайтесь с другими студентами.</p>
-    <a class="btn btn-primary btn-lg" href="{% url 'core:post_list' %}" role="button">Просмотреть посты</a>
-    <a class="btn btn-success btn-lg" href="{% url 'core:course_list' %}" role="button">Просмотреть курсы</a>
-</div>
-{% endblock %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Welcome to P2P Platform</h1>
+    {% if user.is_authenticated %}
+        <p>Hello, {{ user.username }}! <a href="{% url 'core:logout' %}">Logout</a></p>
+        <p><a href="{% url 'core:profile' user.id %}">Profile</a></p>
+        <p><a href="{% url 'core:posts' %}">Posts</a></p>
+    {% else %}
+        <p><a href="{% url 'core:login' %}">Login</a> | <a href="{% url 'core:register' %}">Register</a></p>
+    {% endif %}
+    <h2>Recent Posts</h2>
+    <ul>
+    {% for post in posts %}
+        <li><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a> by {{ post.user.username }}</li>
+    {% empty %}
+        <li>No posts available</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>

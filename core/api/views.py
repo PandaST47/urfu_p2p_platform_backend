@@ -6,11 +6,12 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.db.models import Q
 from django.utils import timezone
-#api/views.py
-from .models import (
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
+from core.models import (
     User, Post, Comment, Course, Chat, 
     Message, Code, CodeComment, Bookmark, 
-    Report, Review, UserWarning, Like
+    Report, Review, UserWarning, Like, Admin, AdminAction, ProfileView
 )
 from .serializers import (
     UserSerializer, PostSerializer, CommentSerializer, 
@@ -19,13 +20,11 @@ from .serializers import (
     ReportSerializer, ReviewSerializer, UserWarningSerializer
 )
 
-# Custom Pagination
 class CustomPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
 
-# Authentication Views
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def register(request):
@@ -55,7 +54,6 @@ def logout_view(request):
     logout(request)
     return Response({'message': 'Successfully logged out'})
 
-# Post Views
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
@@ -66,10 +64,10 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
-        # Фильтрация постов с возможностью поиска и сортировки
         queryset = Post.objects.all()
         search_query = self.request.query_params.get('search', None)
         resolved = self.request.query_params.get('resolved', None)
+        sort_by = self.request.query_params.get('sort', None)
 
         if search_query:
             queryset = queryset.filter(
@@ -80,13 +78,17 @@ class PostViewSet(viewsets.ModelViewSet):
         if resolved is not None:
             queryset = queryset.filter(is_resolved=(resolved == 'true'))
         
-        return queryset.order_by('-created_at')
+        if sort_by == 'likes':
+            queryset = queryset.order_by('-likes_count')
+        else:
+            queryset = queryset.order_by('-created_at')
+        
+        return queryset
 
 @api_view(['POST'])
 def mark_post_resolved(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     
-    # Проверка, что текущий пользователь - автор поста
     if post.user != request.user:
         return Response({'error': 'Only post author can mark as resolved'}, 
                         status=status.HTTP_403_FORBIDDEN)
@@ -95,7 +97,6 @@ def mark_post_resolved(request, post_id):
     post.save()
     return Response(PostSerializer(post).data)
 
-# Course Views
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
@@ -106,7 +107,6 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
     def get_queryset(self):
-        # Фильтрация курсов с возможностью поиска
         queryset = Course.objects.all()
         search_query = self.request.query_params.get('search', None)
 
@@ -118,24 +118,24 @@ class CourseViewSet(viewsets.ModelViewSet):
         
         return queryset.order_by('-created_at')
 
-# Chat Views
 class ChatViewSet(viewsets.ModelViewSet):
     queryset = Chat.objects.all()
     serializer_class = ChatSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Показываем только чаты текущего пользователя
         return Chat.objects.filter(
             Q(user1=self.request.user) | Q(user2=self.request.user)
         )
 
     def create(self, request):
-        # Создание чата между двумя пользователями
         user2_id = request.data.get('user2')
         user2 = get_object_or_404(User, id=user2_id)
         
-        # Проверка, что чат еще не существует
+        if request.user.is_blocked or user2.is_blocked:
+            return Response({'error': 'Blocked users cannot create chats'}, 
+                           status=status.HTTP_403_FORBIDDEN)
+        
         existing_chat = Chat.objects.filter(
             (Q(user1=request.user, user2=user2) | 
              Q(user1=user2, user2=request.user))
@@ -149,7 +149,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(chat)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-# Message Views
 class MessageViewSet(viewsets.ModelViewSet):
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
@@ -165,7 +164,6 @@ class MessageViewSet(viewsets.ModelViewSet):
         chat_id = self.request.data.get('chat')
         chat = get_object_or_404(Chat, id=chat_id)
         
-        # Проверка, что пользователь участник чата
         if chat.user1 != self.request.user and chat.user2 != self.request.user:
             raise PermissionDenied()
         
@@ -177,7 +175,28 @@ class MessageViewSet(viewsets.ModelViewSet):
             chat=chat
         )
 
-# Bookmark Views
+@api_view(['GET'])
+def unread_messages_count(request):
+    count = Message.objects.filter(receiver=request.user, is_read=False).count()
+    return Response({'unread_count': count})
+
+class CodeViewSet(viewsets.ModelViewSet):
+    queryset = Code.objects.all()
+    serializer_class = CodeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        post_id = self.request.query_params.get('post', None)
+        message_id = self.request.query_params.get('message', None)
+        if post_id:
+            return Code.objects.filter(post_id=post_id)
+        if message_id:
+            return Code.objects.filter(message_id=message_id)
+        return Code.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
 @api_view(['POST'])
 def add_bookmark(request, post_id):
     post = get_object_or_404(Post, id=post_id)
@@ -199,40 +218,36 @@ def bookmark_list(request):
     serializer = BookmarkSerializer(bookmarks, many=True)
     return Response(serializer.data)
 
-# Likes Views
 @api_view(['POST'])
 def add_like(request, target_type, target_id):
-    # Проверка валидности target_type
     valid_types = ['post', 'comment', 'course', 'chat']
     if target_type not in valid_types:
         return Response({'error': 'Invalid target type'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Создание лайка
-    like, created = Like.objects.get_or_create(
-        user=request.user,
-        target_type=target_type,
-        target_id=target_id
-    )
+    try:
+        like, created = Like.objects.get_or_create(
+            user=request.user,
+            target_type=target_type,
+            target_id=target_id
+        )
 
-    # Обновление счетчика лайков в соответствующей модели
-    if created:
-        if target_type == 'post':
-            post = get_object_or_404(Post, id=target_id)
-            post.likes_count += 1
-            post.save()
-        elif target_type == 'comment':
-            comment = get_object_or_404(Comment, id=target_id)
-            comment.likes_count += 1
-            comment.save()
-        elif target_type == 'course':
-            course = get_object_or_404(Course, id=target_id)
-            course.likes_count += 1
-            course.save()
-        # для чата особая логика, так как лайки считаются в модели Chat
+        if created:
+            if target_type == 'post':
+                post = get_object_or_404(Post, id=target_id)
+                post.likes_count += 1
+                post.save()
+            elif target_type == 'comment':
+                comment = get_object_or_404(Comment, id=target_id)
+                comment.likes_count += 1
+                comment.save()
+            elif target_type == 'course':
+                course = get_object_or_404(Course, id=target_id)
+                course.likes_count += 1
+                course.save()
+        return Response(status=status.HTTP_201_CREATED)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    return Response(status=status.HTTP_201_CREATED)
-
-# Report Views
 class ReportViewSet(viewsets.ModelViewSet):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer
@@ -242,12 +257,10 @@ class ReportViewSet(viewsets.ModelViewSet):
         serializer.save(reporting_user=self.request.user)
 
     def get_queryset(self):
-        # Для администраторов - все жалобы, для обычных пользователей - только их собственные
         if self.request.user.role == 'admin':
             return Report.objects.filter(status='pending')
         return Report.objects.filter(reporting_user=self.request.user)
 
-# Review Views
 @api_view(['POST'])
 def add_review(request, user_id):
     target_user = get_object_or_404(User, id=user_id)
@@ -261,21 +274,24 @@ def add_review(request, user_id):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Profile Views
 @api_view(['GET'])
 def profile_view(request, user_id):
     user = get_object_or_404(User, id=user_id)
     
-    # Получаем дополнительную информацию о пользователе
+    if user.is_blocked and request.user != user:
+        return Response({'error': 'Profile is blocked'}, status=status.HTTP_403_FORBIDDEN)
+    
     posts = Post.objects.filter(user=user)
     courses = Course.objects.filter(user=user)
     reviews = Review.objects.filter(target_user=user)
+    profile_view = get_object_or_404(ProfileView, user=user)
 
     profile_data = {
         'user': UserSerializer(user).data,
         'posts_count': posts.count(),
         'courses_count': courses.count(),
-        'reviews': ReviewSerializer(reviews, many=True).data
+        'reviews': ReviewSerializer(reviews, many=True).data,
+        'rating': profile_view.rating
     }
 
     return Response(profile_data)
@@ -290,7 +306,6 @@ def edit_profile(request):
         return Response(serializer.data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# Admin Views
 @api_view(['GET'])
 def admin_report_list(request):
     if request.user.role != 'admin':
@@ -307,14 +322,20 @@ def process_report(request, report_id):
     
     report = get_object_or_404(Report, id=report_id)
     
-    # Обработка жалобы
-    action = request.data.get('action')  # 'accept' или 'reject'
-    
+    action = request.data.get('action')
     report.status = 'resolved' if action == 'accept' else 'rejected'
     report.processed_by = request.user
     report.resolved_at = timezone.now()
     report.save()
-
+    
+    admin = Admin.objects.filter(user=request.user).first()
+    if admin:
+        AdminAction.objects.create(
+            admin=admin,
+            action_type='report_processed',
+            target_id=report.id,
+            details=f"Report {report.id} {report.status} by {request.user.username}"
+        )
     return Response(ReportSerializer(report).data)
 
 @api_view(['POST'])
@@ -328,9 +349,16 @@ def create_warning(request, user_id):
     warning = UserWarning.objects.create(
         user=user, 
         admin=admin, 
-        reason=request.data.get('reason', '')
+        reason=request.data.get('reason', ''),
+        is_accepted=True
     )
-
+    
+    AdminAction.objects.create(
+        admin=admin,
+        action_type='warning_created',
+        target_id=user.id,
+        details=f"Warning issued to {user.username} by {request.user.username}"
+    )
     return Response(UserWarningSerializer(warning).data, status=status.HTTP_201_CREATED)
 
 @api_view(['POST'])
@@ -339,13 +367,19 @@ def block_user(request, user_id):
         return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
     
     user = get_object_or_404(User, id=user_id)
-    
-    # Проверяем количество предупреждений
     warnings_count = UserWarning.objects.filter(user=user, is_accepted=True).count()
     
     if warnings_count >= 3:
         user.is_blocked = True
         user.save()
+        admin = Admin.objects.filter(user=request.user).first()
+        if admin:
+            AdminAction.objects.create(
+                admin=admin,
+                action_type='user_blocked',
+                target_id=user.id,
+                details=f"User {user.username} blocked by {request.user.username}"
+            )
         return Response({'message': 'User blocked'})
     
     return Response({'error': 'Not enough warnings to block'}, status=status.HTTP_400_BAD_REQUEST)
@@ -356,9 +390,24 @@ def ban_user(request, user_id):
         return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
     
     user = get_object_or_404(User, id=user_id)
-    
-    # Полный бан пользователя
     user.is_active = False
     user.save()
-
+    
+    admin = Admin.objects.filter(user=request.user).first()
+    if admin:
+        AdminAction.objects.create(
+            admin=admin,
+            action_type='user_banned',
+            target_id=user.id,
+            details=f"User {user.username} banned by {request.user.username}"
+        )
     return Response({'message': 'User banned'})
+
+@api_view(['GET'])
+def admin_user_list(request):
+    if request.user.role != 'admin':
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    users = User.objects.all()
+    serializer = UserSerializer(users, many=True)
+    return Response(serializer.data)
