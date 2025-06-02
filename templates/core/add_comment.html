@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Добавить комментарий{% endblock %}
+
+{% block content %}
+    <h1>Добавить комментарий к "{{ post.title }}"</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Содержание:</label><textarea name="content" required></textarea></p>
+        <p><label>URL изображения:</label><input type="text" name="image_url"></p>
+        <p><label>Код:</label><textarea name="code"></textarea></p>
+        <button type="submit">Отправить</button>
+    </form>
+{% endblock %}

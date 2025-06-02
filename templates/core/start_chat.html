@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Начать чат{% endblock %}
+
+{% block content %}
+    <h1>Начать чат</h1>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% else %}
+        <p>Чат успешно создан!</p>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Избранное{% endblock %}
+
+{% block content %}
+    <h1>Избранное</h1>
+    {% for bookmark in bookmarks %}
+        <div class="post">
+            <h3><a href="{% url 'core:post_detail' bookmark.post.id %}">{{ bookmark.post.title }}</a></h3>
+            <p>{{ bookmark.post.content|truncatechars:100 }}</p>
+            <a href="{% url 'core:remove_bookmark' bookmark.post.id %}">Удалить из избранного</a>
+        </div>
+    {% empty %}
+        <p>Закладок нет.</p>
+    {% endfor %}
+{% endblock %}

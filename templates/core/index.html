@@ -1,24 +1,17 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Home</title>
-</head>
-<body>
-    <h1>Welcome to P2P Platform</h1>
-    {% if user.is_authenticated %}
-        <p>Hello, {{ user.username }}! <a href="{% url 'core:logout' %}">Logout</a></p>
-        <p><a href="{% url 'core:profile' user.id %}">Profile</a></p>
-        <p><a href="{% url 'core:posts' %}">Posts</a></p>
-    {% else %}
-        <p><a href="{% url 'core:login' %}">Login</a> | <a href="{% url 'core:register' %}">Register</a></p>
-    {% endif %}
-    <h2>Recent Posts</h2>
-    <ul>
+{% extends 'core/base.html' %}
+
+{% block title %}Главная{% endblock %}
+
+{% block content %}
+    <h1>Добро пожаловать на URFU P2P!</h1>
+    <h2>Последние посты</h2>
     {% for post in posts %}
-        <li><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a> by {{ post.user.username }}</li>
+        <div class="post">
+            <h3><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a></h3>
+            <p>{{ post.content|truncatechars:100 }}</p>
+            <p>Автор: {{ post.user.username }} | Статус: {% if post.is_resolved %}Решённый{% else %}Нерешённый{% endif %}</p>
+        </div>
     {% empty %}
-        <li>No posts available</li>
+        <p>Постов пока нет.</p>
     {% endfor %}
-    </ul>
-</body>
-</html>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Курсы{% endblock %}
+
+{% block content %}
+    <h1>Курсы</h1>
+    <form method="get" action="{% url 'core:search_courses' %}">
+        <input type="text" name="query" placeholder="Поиск по курсам">
+        <button type="submit">Искать</button>
+    </form>
+    <a href="{% url 'core:create_course' %}">Создать курс</a>
+    {% for course in courses %}
+        <div class="course">
+            <h3><a href="{% url 'core:course_detail' course.id %}">{{ course.title }}</a></h3>
+            {% if course.image_url %}
+                <img src="{{ course.image_url }}" alt="Course image" style="max-width: 200px;">
+            {% endif %}
+            <p>{{ course.content|truncatechars:100 }}</p>
+            <p>Автор: {{ course.user.username }} | Лайки: {{ course.likes_count }}</p>
+            <a href="{% url 'core:add_like' 'course' course.id %}">Лайк</a>
+        </div>
+    {% empty %}
+        <p>Курсов нет.</p>
+    {% endfor %}
+{% endblock %}

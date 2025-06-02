@@ -1,7 +1,9 @@
+# core/models.py
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.utils import timezone
-#models.py
+
 class User(AbstractUser):
     profile_img_url = models.TextField(default='')
     role = models.TextField(default='user')
@@ -63,7 +65,7 @@ class Post(models.Model):
     code = models.TextField(blank=True)
     likes_count = models.IntegerField(default=0)
     created_at = models.DateTimeField(default=timezone.now)
-    is_resolved = models.BooleanField(default=False)  # Добавлено на основе User Story
+    is_resolved = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -160,10 +162,18 @@ class Rating(models.Model):
 
 class ProfileView(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    rating = models.IntegerField(default=0)
-    
+    rating = models.IntegerField(default=0)  # Рейтинг в брс (0–15)
+    total_points = models.IntegerField(default=0)  # Сырые баллы (до 60)
+
     def __str__(self):
         return f"Profile for {self.user.username}"
+
+    def update_rating(self):
+        # Ограничиваем сырые баллы до 60
+        self.total_points = min(self.total_points, 60)
+        # Пересчитываем рейтинг в брс: баллы * 0.25, округление
+        self.rating = round(self.total_points * 0.25)
+        self.save()
 
 class Like(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -182,7 +192,6 @@ class Call(models.Model):
     def __str__(self):
         return f"Call in chat {self.chat.id}"
 
-# Добавлены для User Story
 class Review(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_given')
     target_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reviews_received')

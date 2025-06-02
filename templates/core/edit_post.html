@@ -1,0 +1,15 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Редактировать пост{% endblock %}
+
+{% block content %}
+    <h1>Редактировать пост</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Тема:</label><input type="text" name="title" value="{{ post.title }}" required></p>
+        <p><label>Содержание:</label><textarea name="content" required>{{ post.content }}</textarea></p>
+        <p><label>URL изображения:</label><input type="text" name="image_url" value="{{ post.image_url }}"></p>
+        <p><label>Код:</label><textarea name="code">{{ post.code }}</textarea></p>
+        <button type="submit">Сохранить</button>
+    </form>
+{% endblock %}

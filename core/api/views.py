@@ -30,9 +30,16 @@ class CustomPagination(PageNumberPagination):
 def register(request):
     serializer = UserSerializer(data=request.data)
     if serializer.is_valid():
+        email = request.data.get('email')
+        if not email:  # Проверка на None или пустую строку
+            return Response({'error': 'Email is required'}, status=status.HTTP_400_BAD_REQUEST)
+        if not email.endswith('@urfu.me'):
+            return Response({'error': 'Используйте почту @urfu.me'}, status=status.HTTP_400_BAD_REQUEST)
         user = serializer.save()
         user.set_password(request.data.get('password'))
         user.save()
+        # Указываем бэкенд аутентификации при вызове login
+        login(request, user, backend='core.backends.EmailBackend')
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -41,10 +48,12 @@ def register(request):
 def login_view(request):
     email = request.data.get('email')
     password = request.data.get('password')
-    user = authenticate(username=email, password=password)
-    
+    if not email or not password:
+        return Response({'error': 'Email and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+    user = authenticate(request, email=email, password=password)  # Теперь работает с EmailBackend
     if user:
-        login(request, user)
+        # Указываем бэкенд аутентификации и здесь для консистентности
+        login(request, user, backend='core.backends.EmailBackend')
         serializer = UserSerializer(user)
         return Response(serializer.data)
     return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -76,7 +85,7 @@ class PostViewSet(viewsets.ModelViewSet):
             )
         
         if resolved is not None:
-            queryset = queryset.filter(is_resolved=(resolved == 'true'))
+            queryset = queryset.filter(is_resolved=(resolved.lower() == 'true'))
         
         if sort_by == 'likes':
             queryset = queryset.order_by('-likes_count')
@@ -244,6 +253,10 @@ def add_like(request, target_type, target_id):
                 course = get_object_or_404(Course, id=target_id)
                 course.likes_count += 1
                 course.save()
+            elif target_type == 'chat':
+                chat = get_object_or_404(Chat, id=target_id)
+                chat.chat_likes_cnt += 1
+                chat.save()
         return Response(status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -411,3 +424,29 @@ def admin_user_list(request):
     users = User.objects.all()
     serializer = UserSerializer(users, many=True)
     return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def rate_for_help(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
+    if request.user == target_user:
+        return Response({'error': 'Cannot rate yourself'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Проверяем, есть ли чат между пользователями
+    chat = Chat.objects.filter(
+        (Q(user1=request.user, user2=target_user) | 
+         Q(user1=target_user, user2=request.user))
+    ).first()
+    if not chat:
+        return Response({'error': 'You must have a chat with this user to rate them'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Увеличиваем счётчик лайков за помощь в ЛС
+    target_user.chat_help_likes_cnt += 1
+    target_user.save()
+
+    # Добавляем баллы за помощь в ЛС (+2)
+    profile_view = target_user.profileview
+    profile_view.total_points += 2
+    profile_view.update_rating()
+
+    return Response({'message': 'User rated for help', 'new_points': profile_view.total_points}, status=status.HTTP_200_OK)

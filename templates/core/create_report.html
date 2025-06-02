@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Пожаловаться{% endblock %}
+
+{% block content %}
+    <h1>Пожаловаться</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Описание жалобы:</label><textarea name="report_description" required></textarea></p>
+        <button type="submit">Отправить</button>
+    </form>
+{% endblock %}

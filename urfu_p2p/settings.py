@@ -34,6 +34,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'core.backends.EmailBackend',  # Добавляем наш кастомный бэкенд
+]
+
 CORS_ALLOW_ALL_ORIGINS = True
 
 MEDIA_URL = '/media/'

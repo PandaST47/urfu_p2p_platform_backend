@@ -1,0 +1,45 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ post.title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ post.title }}</h1>
+    <p>{{ post.content }}</p>
+    {% if post.image_url %}
+        <img src="{{ post.image_url }}" alt="Post image" style="max-width: 300px;">
+    {% endif %}
+    {% if post.code %}
+        <pre class="code">{{ post.code }}</pre>
+    {% endif %}
+    <p>Автор: {{ post.user.username }} | Создан: {{ post.created_at }} | Лайки: {{ post.likes_count }}</p>
+    <p>Статус: {% if post.is_resolved %}Решённый{% else %}Нерешённый{% endif %}</p>
+    {% if user.is_authenticated %}
+        <a href="{% url 'core:add_like' 'post' post.id %}">Лайк</a>
+        {% if user == post.user %}
+            <a href="{% url 'core:edit_post' post.id %}">Редактировать</a>
+            <a href="{% url 'core:delete_post' post.id %}">Удалить</a>
+            <a href="{% url 'core:mark_post_resolved' post.id %}">Отметить как решённый</a>
+        {% endif %}
+        <a href="{% url 'core:add_comment' post.id %}">Добавить комментарий</a>
+    {% endif %}
+    
+    <h2>Комментарии</h2>
+    {% for comment in comments %}
+        <div class="comment">
+            <p>{{ comment.content }}</p>
+            {% if comment.code %}
+                <pre class="code">{{ comment.code }}</pre>
+            {% endif %}
+            <p>Автор: {{ comment.user.username }} | Лайки: {{ comment.likes_count }}</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'core:add_like' 'comment' comment.id %}">Лайк</a>
+                {% if user == comment.user %}
+                    <a href="{% url 'core:edit_comment' comment.id %}">Редактировать</a>
+                    <a href="{% url 'core:delete_comment' comment.id %}">Удалить</a>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% empty %}
+        <p>Комментариев нет.</p>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Редактировать профиль{% endblock %}
+
+{% block content %}
+    <h1>Редактировать профиль</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>URL изображения профиля:</label><input type="text" name="profile_img_url" value="{{ user.profile_img_url }}"></p>
+        <button type="submit">Сохранить</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Отправить сообщение{% endblock %}
+
+{% block content %}
+    <h1>Отправить сообщение в чат</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Сообщение:</label><textarea name="content" required></textarea></p>
+        <p><label>URL изображения:</label><input type="text" name="image_url"></p>
+        <p><label>Это код?</label><input type="checkbox" name="is_code" value="true"></p>
+        <p><label>Код (если отмечен):</label><textarea name="code_content"></textarea></p>
+        <p><label>Язык кода:</label><input type="text" name="language" value="python"></p>
+        <button type="submit">Отправить</button>
+    </form>
+{% endblock %}

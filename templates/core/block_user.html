@@ -1,0 +1,16 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Заблокировать пользователя{% endblock %}
+
+{% block content %}
+    <h1>Заблокировать {{ target_user.username }}</h1>
+    <p>Предупреждений: {{ warnings_count }}</p>
+    {% if warnings_count >= 3 %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit">Заблокировать</button>
+        </form>
+    {% else %}
+        <p>Недостаточно предупреждений для блокировки.</p>
+    {% endif %}
+{% endblock %}

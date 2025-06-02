@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ course.title }}{% endblock %}
+
+{% block content %}
+    <h1>{{ course.title }}</h1>
+    <p>{{ course.content }}</p>
+    {% if course.image_url %}
+        <img src="{{ course.image_url }}" alt="Course image" style="max-width: 300px;">
+    {% endif %}
+    {% if course.code %}
+        <pre class="code">{{ course.code }}</pre>
+    {% endif %}
+    <p>Автор: {{ course.user.username }} | Создан: {{ course.created_at }} | Лайки: {{ course.likes_count }}</p>
+    {% if user.is_authenticated %}
+        <a href="{% url 'core:add_like' 'course' course.id %}">Лайк</a>
+        {% if user == course.user %}
+            <a href="{% url 'core:edit_course' course.id %}">Редактировать</a>
+            <a href="{% url 'core:delete_course' course.id %}">Удалить</a>
+        {% endif %}
+    {% endif %}
+{% endblock %}

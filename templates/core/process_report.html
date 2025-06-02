@@ -1,0 +1,14 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Обработать жалобу{% endblock %}
+
+{% block content %}
+    <h1>Обработать жалобу #{{ report.id }}</h1>
+    <p>Жалоба от {{ report.reporting_user.username }} на {{ report.reporting_target_type }} #{{ report.reporting_target_id }}</p>
+    <p>Описание: {{ report.report_description }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="accept">Принять</button>
+        <button type="submit" name="action" value="reject">Отклонить</button>
+    </form>
+{% endblock %}

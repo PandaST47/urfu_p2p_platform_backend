@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Чаты{% endblock %}
+
+{% block content %}
+    <h1>Чаты</h1>
+    {% for chat in chats %}
+        <div class="chat">
+            <h3><a href="{% url 'core:chat_detail' chat.id %}">
+                Чат с {{ chat.user1.username if chat.user2 == user else chat.user2.username }}
+            </a></h3>
+            <p>Создан: {{ chat.created_at }} | Лайки: {{ chat.chat_likes_cnt }}</p>
+        </div>
+    {% empty %}
+        <p>Чатов нет.</p>
+    {% endfor %}
+{% endblock %}

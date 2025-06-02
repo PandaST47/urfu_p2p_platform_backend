@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Выдать предупреждение{% endblock %}
+
+{% block content %}
+    <h1>Выдать предупреждение {{ target_user.username }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p><label>Причина:</label><textarea name="reason" required></textarea></p>
+        <button type="submit">Отправить</button>
+    </form>
+{% endblock %}

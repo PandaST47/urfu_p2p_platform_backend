@@ -1,0 +1,12 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Отметить как решённый{% endblock %}
+
+{% block content %}
+    <h1>Отметить пост "{{ post.title }}" как решённый</h1>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Подтвердить</button>
+        <a href="{% url 'core:post_detail' post.id %}">Отмена</a>
+    </form>
+{% endblock %}

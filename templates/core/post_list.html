@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Лента постов{% endblock %}
+
+{% block content %}
+    <h1>Лента постов</h1>
+    <form method="get" action="{% url 'core:search_posts' %}">
+        <input type="text" name="query" placeholder="Поиск по постам">
+        <button type="submit">Искать</button>
+    </form>
+    <a href="{% url 'core:create_post' %}">Создать пост</a>
+    {% for post in posts %}
+        <div class="post">
+            <h3><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a></h3>
+            <p>{{ post.content|truncatechars:100 }}</p>
+            <p>Автор: {{ post.user.username }} | Статус: {% if post.is_resolved %}Решённый{% else %}Нерешённый{% endif %} | Лайки: {{ post.likes_count }}</p>
+            <a href="{% url 'core:add_bookmark' post.id %}">Добавить в избранное</a>
+        </div>
+    {% empty %}
+        <p>Постов нет.</p>
+    {% endfor %}
+{% endblock %}

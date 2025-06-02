@@ -1,0 +1,25 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Чат{% endblock %}
+
+{% block content %}
+    <h1>Чат с {{ chat.user1.username if chat.user2 == user else chat.user2.username }}</h1>
+    {% for message in messages %}
+        <div class="message">
+            <p><strong>{{ message.sender.username }}:</strong> {{ message.content }}</p>
+            {% if message.is_code %}
+                <p>Код:</p>
+                <pre class="code">
+                    {% for code in message.code_snippets.all %}
+                        {{ code.code_content }}
+                    {% endfor %}
+                </pre>
+            {% endif %}
+            <p>Отправлено: {{ message.created_at }}</p>
+        </div>
+    {% empty %}
+        <p>Сообщений нет.</p>
+    {% endfor %}
+    <a href="{% url 'core:send_message' chat.id %}">Отправить сообщение</a>
+    <a href="{% url 'core:add_like' 'chat' chat.id %}">Лайк</a>
+{% endblock %}

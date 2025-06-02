@@ -1,23 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Profile</title>
-</head>
-<body>
-    <h1>{{ profile_user.username }}'s Profile</h1>
-    <p>Email: {{ profile_user.email }}</p>
-    <p>Role: {{ profile_user.role }}</p>
-    {% if profile_user == user %}
-        <p><a href="{% url 'core:edit_profile' %}">Edit Profile</a></p>
+{% extends 'core/base.html' %}
+
+{% block title %}Профиль {{ profile_user.username }}{% endblock %}
+
+{% block content %}
+    <h1>Профиль {{ profile_user.username }}</h1>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% else %}
+        <p>Email: {{ profile_user.email }}</p>
+        <p>Роль: {{ profile_user.role }}</p>
+        <p>Вопросы: {{ profile_user.total_questions }} | Ответы: {{ profile_user.total_answers }}</p>
+        <p>Лайки постов: {{ profile_user.post_likes_cnt }} | Лайки комментариев: {{ profile_user.comment_likes_cnt }}</p>
+        
+        <h2>Посты</h2>
+        {% for post in posts %}
+            <div class="post">
+                <h3><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a></h3>
+                <p>{{ post.content|truncatechars:100 }}</p>
+            </div>
+        {% empty %}
+            <p>Постов нет.</p>
+        {% endfor %}
+        
+        <h2>Курсы</h2>
+        {% for course in courses %}
+            <div class="course">
+                <h3><a href="{% url 'core:course_detail' course.id %}">{{ course.title }}</a></h3>
+                <p>{{ course.content|truncatechars:100 }}</p>
+            </div>
+        {% empty %}
+            <p>Курсов нет.</p>
+        {% endfor %}
+        
+        <h2>Отзывы</h2>
+        {% for review in reviews %}
+            <p>{{ review.user.username }}: {{ review.content }}</p>
+        {% empty %}
+            <p>Отзывов нет.</p>
+        {% endfor %}
+        
+        {% if user.is_authenticated %}
+            <a href="{% url 'core:add_review' profile_user.id %}">Оставить отзыв</a>
+            <a href="{% url 'core:start_chat' profile_user.id %}">Начать чат</a>
+            <a href="{% url 'core:create_report' 'user' profile_user.id %}">Пожаловаться</a>
+            {% if user.role == 'admin' %}
+                <a href="{% url 'core:create_warning' profile_user.id %}">Выдать предупреждение</a>
+                <a href="{% url 'core:block_user' profile_user.id %}">Заблокировать</a>
+                <a href="{% url 'core:ban_user' profile_user.id %}">Забанить</a>
+            {% endif %}
+        {% endif %}
     {% endif %}
-    <h2>Posts</h2>
-    <ul>
-    {% for post in posts %}
-        <li><a href="{% url 'core:post_detail' post.id %}">{{ post.title }}</a></li>
-    {% empty %}
-        <li>No posts</li>
-    {% endfor %}
-    </ul>
-    <p><a href="{% url 'core:index' %}">Home</a></p>
-</body>
-</html>
+{% endblock %}

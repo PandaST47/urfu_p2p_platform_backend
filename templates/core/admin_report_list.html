@@ -1,0 +1,17 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Список жалоб{% endblock %}
+
+{% block content %}
+    <h1>Список жалоб</h1>
+    {% for report in reports %}
+        <div class="report">
+            <p>Жалоба от {{ report.reporting_user.username }} на {{ report.reporting_target_type }} #{{ report.reporting_target_id }}</p>
+            <p>Описание: {{ report.report_description }}</p>
+            <p>Статус: {{ report.status }}</p>
+            <a href="{% url 'core:process_report' report.id %}">Обработать</a>
+        </div>
+    {% empty %}
+        <p>Жалоб нет.</p>
+    {% endfor %}
+{% endblock %}

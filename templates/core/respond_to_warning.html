@@ -1,0 +1,13 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Ответить на предупреждение{% endblock %}
+
+{% block content %}
+    <h1>Предупреждение</h1>
+    <p>Причина: {{ warning.reason }}</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" name="action" value="accept">Принять</button>
+        <button type="submit" name="action" value="dispute">Оспорить</button>
+    </form>
+{% endblock %}
